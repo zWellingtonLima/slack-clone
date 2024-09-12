@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { FaGithub } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import { TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { SignInFlow } from "../types";
 
 interface SignInCardProps {
@@ -22,12 +23,26 @@ interface SignInCardProps {
 export const SignInCard = ({ setState }: SignInCardProps) => {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
 
   const onProviderSignIn = (value: "google" | "github") => {
     setPending(true);
     signIn(value).finally(() => setPending(false));
+  };
+
+  const onPasswordSignIn = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    setPending(true);
+    signIn("password", { email, password, flow: "signIn" })
+      .catch(() => {
+        setError("Invalid email or password")
+      })
+      .finally(() => {
+        setPending(false);
+      });
   };
 
   return (
@@ -38,8 +53,14 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
           Use your email or another service to continue
         </CardDescription>
       </CardHeader>
+      {!!error && (
+        <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive mb-6">
+          <TriangleAlert size={4}/>
+          <p>{error}</p>
+        </div>
+      )}
       <CardContent className="space-y-5">
-        <form className="space-y-2.5">
+        <form className="space-y-2.5" onSubmit={(e) => onPasswordSignIn(e)}>
           <Input
             disabled={pending}
             value={email}
