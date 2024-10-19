@@ -1,6 +1,7 @@
 import { FaChevronDown } from "react-icons/fa";
 import { TrashIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,18 +14,41 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useChannelId } from "@/hooks/use-channel-id";
+import { useUpdateChannel } from "@/features/channels/api/use-update-channel";
 
 interface HeaderProps {
   title: string;
 }
 
 export const Header = ({ title }: HeaderProps) => {
+  const channelId = useChannelId();
+
   const [value, setValue] = useState(title);
   const [editOpen, setEditOpen] = useState(false);
+
+  const { mutate: updateChannel, isPending: isUpdatingChannel } =
+    useUpdateChannel();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\s+/g, "-").toLowerCase();
     setValue(value);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    updateChannel(
+      { id: channelId, name: value },
+      {
+        onSuccess: () => {
+          toast.success("Channel updated");
+          setEditOpen(false);
+        },
+        onError: () => {
+          toast.error("Failed to update channel");
+        },
+      }
+    );
   };
 
   return (
@@ -61,11 +85,11 @@ export const Header = ({ title }: HeaderProps) => {
                 <DialogHeader>
                   <DialogTitle>Rename this channel</DialogTitle>
                 </DialogHeader>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={handleSubmit}>
                   <Input
                     required
                     value={value}
-                    disabled={false}
+                    disabled={isUpdatingChannel}
                     onChange={handleChange}
                     autoFocus
                     minLength={3}
@@ -74,11 +98,11 @@ export const Header = ({ title }: HeaderProps) => {
                   />
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline" disabled={false}>
+                      <Button variant="outline" disabled={isUpdatingChannel}>
                         Cancel
                       </Button>
                     </DialogClose>
-                    <Button disabled={false}>Save</Button>
+                    <Button disabled={isUpdatingChannel}>Save</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
